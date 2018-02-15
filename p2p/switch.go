@@ -85,6 +85,7 @@ func NewSwitch(config *cfg.P2PConfig) *Switch {
 	sw.peerConfig.MConfig.SendRate = config.SendRate
 	sw.peerConfig.MConfig.RecvRate = config.RecvRate
 	sw.peerConfig.MConfig.MaxMsgPacketPayloadSize = config.MaxMsgPacketPayloadSize
+	sw.peerConfig.AuthEnc = config.AuthEnc
 
 	sw.BaseService = *cmn.NewBaseService(nil, "P2P Switch", sw)
 	return sw
@@ -467,9 +468,7 @@ func (sw *Switch) addOutboundPeerWithConfig(addr *NetAddress, config *PeerConfig
 	peer.SetLogger(sw.Logger.With("peer", addr))
 
 	// authenticate peer
-	if addr.ID == "" {
-		peer.Logger.Info("Dialed peer with unknown ID - unable to authenticate", "addr", addr)
-	} else if addr.ID != peer.ID() {
+	if config.AuthEnc && addr.ID != peer.ID() {
 		peer.CloseConn()
 		return nil, ErrSwitchAuthenticationFailure{addr, peer.ID()}
 	}
