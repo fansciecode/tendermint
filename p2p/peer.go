@@ -177,7 +177,10 @@ func (p *peer) OnStop() {
 
 // ID returns the peer's ID - the hex encoded hash of its pubkey.
 func (p *peer) ID() ID {
-	return PubKeyToID(p.PubKey())
+	if p.nodeInfo.PubKey.Empty() {
+		panic("Can't call ID before the handshake")
+	}
+	return PubKeyToID(p.nodeInfo.PubKey)
 }
 
 // IsOutbound returns true if the connection is outbound, false otherwise.
