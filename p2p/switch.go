@@ -489,6 +489,16 @@ func (sw *Switch) addOutboundPeerWithConfig(addr *NetAddress, config *PeerConfig
 // NOTE: This performs a blocking handshake before the peer is added.
 // NOTE: If error is returned, caller is responsible for calling peer.CloseConn()
 func (sw *Switch) addPeer(peer *peer) error {
+	// Filter peer against white list
+	if err := sw.FilterConnByAddr(peer.Addr()); err != nil {
+		return err
+	}
+
+	// Exchange NodeInfo with the peer
+	if err := peer.HandshakeTimeout(sw.nodeInfo, time.Duration(sw.peerConfig.HandshakeTimeout*time.Second)); err != nil {
+		return err
+	}
+
 	// Avoid self
 	if sw.nodeKey.ID() == peer.ID() {
 		return ErrSwitchConnectToSelf
@@ -497,19 +507,10 @@ func (sw *Switch) addPeer(peer *peer) error {
 	// Avoid duplicate
 	if sw.peers.Has(peer.ID()) {
 		return ErrSwitchDuplicatePeer
-
 	}
 
 	// Filter peer against white list
-	if err := sw.FilterConnByAddr(peer.Addr()); err != nil {
-		return err
-	}
 	if err := sw.FilterConnByPubKey(peer.PubKey()); err != nil {
-		return err
-	}
-
-	// Exchange NodeInfo with the peer
-	if err := peer.HandshakeTimeout(sw.nodeInfo, time.Duration(sw.peerConfig.HandshakeTimeout*time.Second)); err != nil {
 		return err
 	}
 
