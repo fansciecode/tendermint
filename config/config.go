@@ -309,6 +309,7 @@ func TestP2PConfig() *P2PConfig {
 	conf.ListenAddress = "tcp://0.0.0.0:36656"
 	conf.SkipUPNP = true
 	conf.FlushThrottleTimeout = 10
+	conf.AuthEnc = false
 	return conf
 }
 
