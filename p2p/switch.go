@@ -467,12 +467,6 @@ func (sw *Switch) addOutboundPeerWithConfig(addr *NetAddress, config *PeerConfig
 	}
 	peer.SetLogger(sw.Logger.With("peer", addr))
 
-	// authenticate peer
-	if config.AuthEnc && addr.ID != peer.ID() {
-		peer.CloseConn()
-		return nil, ErrSwitchAuthenticationFailure{addr, peer.ID()}
-	}
-
 	err = sw.addPeer(peer)
 	if err != nil {
 		sw.Logger.Error("Failed to add peer", "address", addr, "err", err)
@@ -512,6 +506,12 @@ func (sw *Switch) addPeer(peer *peer) error {
 	// Filter peer against white list
 	if err := sw.FilterConnByPubKey(peer.PubKey()); err != nil {
 		return err
+	}
+
+	// if AuthEnc is true, dialed peers must have a node ID in the address and it
+	// must match an ID, derived from the node's pubkey from the handshake
+	if sw.peerConfig.AuthEnc && peer.IsOutbound() && peer.addr.ID != peer.ID() {
+		return ErrSwitchAuthenticationFailure{peer.addr, peer.ID()}
 	}
 
 	// Validate the peers nodeInfo against the pubkey
